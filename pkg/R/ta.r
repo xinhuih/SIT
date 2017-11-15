@@ -1,22 +1,23 @@
 ###############################################################################
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# This software is provided 'as-is', without any express or implied
+# warranty. In no event will the authors be held liable for any damages
+# arising from the use of this software.
+# 
+# Permission is granted to anyone to use this software for any purpose,
+# including commercial applications, and to alter it and redistribute it
+# freely, subject to the following restrictions:
+# 
+# 1. The origin of this software must not be misrepresented; you must not
+#    claim that you wrote the original software. If you use this software
+#    in a product, an acknowledgment in the product documentation would be
+#    appreciated but is not required.
+# 2. Altered source versions must be plainly marked as such, and must not be
+#    misrepresented as being the original software.
+# 3. This notice may not be removed or altered from any source distribution.
 ###############################################################################
 # Technical Analysis Functions
-# Copyright (C) 2011  Michael Kapler
 #
-# For more information please visit my blog at www.SystematicInvestor.wordpress.com
-# or drop me a line at TheSystematicInvestor at gmail
+# For more information please email at TheSystematicInvestor at gmail
 ###############################################################################
 
 
@@ -295,6 +296,7 @@ ntop <- function
 {
 	# work with matrix
 	temp = coredata(data)
+	if(is.logical(temp)) temp[] = iif(!temp,NA,temp)
 	
 	# equal weight all assets special case
 	if(topn == ncol(data)) {
@@ -307,18 +309,14 @@ ntop <- function
 		return( out )
 	}
 	
+	index.n = rowSums(!is.na(temp))
 	for( i in 1:nrow(data) ) {
-		x = temp[i,]
-		index = !is.na(x)
-			index.n = sum(index)	
-				
-		if( index.n > 0 ) {
-			o = sort.list(x, na.last = TRUE, decreasing = dirMaxMin)
-			x[] = 0
-			n = min(topn, index.n)
-			x[o[1:n]] = 1/n
-		} else x[] = 0
-		temp[i,] = x
+		if( index.n[i] > 0 ) {
+			o = sort.list(temp[i,], na.last = TRUE, decreasing = dirMaxMin)
+			temp[i,] = 0
+			n = min(topn, index.n[i])
+			temp[i,o[1:n]] = 1/n
+		} else temp[i,] = 0
 	}
 	
 	# work with xts
@@ -337,8 +335,7 @@ ntop.helper <- function
 ) 
 {
 	x = as.vector(x)
-	index = !is.na(x)
-		index.n = sum(index)	
+	index.n = sum(!is.na(x))	
 		
 	if( index.n > 0 ) {
 		o = sort.list(x, na.last=TRUE, decreasing = dirMaxMin)
@@ -407,44 +404,43 @@ ntop.keep <- function
 {
 	# work with matrix
 	temp = coredata(data)
-	
+	if(is.logical(temp)) temp[] = iif(!temp,NA,temp)
+	index.n = rowSums(!is.na(temp))
+		
 	for( i in 1:nrow(temp) ) {
-		x = temp[i,]
-		index = !is.na(x)
-			index.n = sum(index)	
-			
-		if( index.n > 0 ) {
+		if( index.n[i] > 0 ) {
+			x = temp[i,]
 			o = sort.list(x, na.last = TRUE, decreasing = dirMaxMin)
-			x[] = 0		
-			n = min(topn, index.n)
+			x[] = 0
+			n = min(topn, index.n[i])
 			x[o[1:n]] = 1
 		
 			# keepn logic
 			if( i >= 2 ) {
 				y = temp[(i-1),]		# prev period selection
-				n1 = min(keepn, index.n)
-				y[-o[1:n1]] = NA	# remove all not in top keepn
+				n1 = min(keepn, index.n[i])
+				y[-o[1:n1]] = 0		# remove all not in top keepn
 				
-				index1 = !is.na(y)
+				index1 = y != 0
 					index1.n = sum(index1)	
 				if( index1.n > 0 ) {
 					x[] = 0
 					x[index1] = 1
 					
 					for( j in 1:n ) {
-						if( sum(x,na.rm=T) == topn ) break
+						if( sum(x) == topn ) break
 						x[o[j]] = 1
 					}
 				}
 			}
-		} else x[] = 0		
-		temp[i,] = x/sum(x)	
+			temp[i,] = x/sum(x)	
+		} else temp[i,] = 0		
 	}
 	
 	# work with xts
 	out = data
 	out[] = temp		
-	return( out )
+	out
 }
 
 

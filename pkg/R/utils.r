@@ -1,22 +1,23 @@
 ###############################################################################
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# This software is provided 'as-is', without any express or implied
+# warranty. In no event will the authors be held liable for any damages
+# arising from the use of this software.
+# 
+# Permission is granted to anyone to use this software for any purpose,
+# including commercial applications, and to alter it and redistribute it
+# freely, subject to the following restrictions:
+# 
+# 1. The origin of this software must not be misrepresented; you must not
+#    claim that you wrote the original software. If you use this software
+#    in a product, an acknowledgment in the product documentation would be
+#    appreciated but is not required.
+# 2. Altered source versions must be plainly marked as such, and must not be
+#    misrepresented as being the original software.
+# 3. This notice may not be removed or altered from any source distribution.
 ###############################################################################
 # Collection of General Utilities
-# Copyright (C) 2012  Michael Kapler
 #
-# For more information please visit my blog at www.SystematicInvestor.wordpress.com
-# or drop me a line at TheSystematicInvestor at gmail
+# For more information please email at TheSystematicInvestor at gmail
 ###############################################################################
 
 
@@ -44,7 +45,7 @@ spl <- function
   delim = ',' # delimiter
 )
 { 
-  return(unlist(strsplit(s,delim))); 
+  unlist(strsplit(s,delim))
 }
 
 ###############################################################################
@@ -69,7 +70,7 @@ join <- function
   delim = ''  # delimiter
 )
 { 
-  return(paste(v,collapse=delim)); 
+  paste(v,collapse=delim) 
 }
 
 ###############################################################################
@@ -93,8 +94,7 @@ trim <- function
 )
 {
   s = sub(pattern = '^\\s+', replacement = '', x = s)
-  s = sub(pattern = '\\s+$', replacement = '', x = s)
-  return(s)
+  sub(pattern = '\\s+$', replacement = '', x = s)
 }  
 
 ###############################################################################
@@ -117,8 +117,58 @@ len <- function
   x # vector
 )
 {
-  return(length(x)) 
+  length(x)
 }
+
+###############################################################################
+#' Shortcut for list creation function
+#'
+#' This function is a shortcut for list creation function
+#'
+#' @param ... members of list
+#'
+#' @return list
+#'
+#' @examples
+#' \dontrun{ 
+#' a = 1
+#' lst(a,b=2)
+#' }
+#' @export 
+###############################################################################
+lst <- function(
+	... 
+) 
+{
+	values = list( ... )
+	if(len(values) == 0) return(values)
+
+	values.names = names(values)
+	names = as.character(substitute(c(...))[-1])		
+		
+	if( is.null(values.names) ) 
+		names(values) = names
+	else		
+		names(values) = iif(nchar(values.names) > 0, values.names, names)
+	values
+}	
+
+#' @export
+vars2list <- function(...) {
+	warning('vars2list is depreciated as of Feb 29, 2016 please use lst function instead')
+	lst(...)
+}
+
+#' @export
+variable.number.arguments <- function(...) {
+	out = lst(...)
+	if( is.list(out[[1]]) && is.list(out[[1]][[1]]) ) 
+		out[[1]]
+	else	
+		out
+}	
+
+
 
 ###############################################################################
 #' Shortcut for new.env function
@@ -148,21 +198,14 @@ env <- function
 ) 
 {
 	temp = new.env(hash = hash, parent = parent, size = size)
-	values = list(...)
+	values = lst(...)
 	if(len(values) == 0) return(temp)
 	
 	# copy environment
-	if(len(values) == 1 && is.environment(values[[1]])) {
+	if(len(values) == 1 && is.environment(values[[1]]))
 		list2vars(values[[1]], temp)
-		return(temp)
-	}
-	
-	values.names = names(values)
-	names = as.character(substitute(c(...))[-1])
-		
-	names = iif(nchar(values.names) > 0, values.names, names)
-	for(i in 1:len(values))
-		temp[[ names[i] ]] = values[[i]]
+	else	
+		list2vars(values, temp)
 	temp
 }
 
@@ -171,8 +214,18 @@ env <- function
 #'
 #' @export
 #' @rdname EnvironmentFunctions
-env.del <- function(names, env) {
-	rm(list=names, envir=env)
+###############################################################################
+env.del = function(names, env) {
+	warning('env.del is depreciated as of Apr 25, 2016 please use env.rm function instead')
+	env.rm(names, env)
+}
+
+#' @export
+env.rm = function(names, env) {
+	missing = setdiff(names, ls(env))
+	if( len(missing) > 0)
+		warning('Following names are missing in environment:', missing, '\n, names available in environment:', ls(env))
+	rm(list=intersect(names, ls(env)), envir=env)
 }
 
 
@@ -181,7 +234,7 @@ env.del <- function(names, env) {
 #
 # can be useful for debugging:
 #
-# gall <<- vars2list(lookbacks, n.lag, hist.returns, index, hist.all, n.lookback)					
+# gall <<- lst(lookbacks, n.lag, hist.returns, index, hist.all, n.lookback)					
 # list2vars(gall)
 #
 # options(warn=2)
@@ -195,19 +248,7 @@ env.del <- function(names, env) {
 # list2vars(test.env, environment()) 
 # similar to checkpoint package at CRAN
 #
-#' @export 
 ###############################################################################
-vars2list <- function(...) {
-	values = list( ... )
-	if(len(values) == 0) return(values)
-
-	values.names = names(values)
-	names = as.character(substitute(c(...))[-1])
-		
-	names(values) = iif(nchar(values.names) > 0, values.names, names)
-	values
-}
-
 # assign(n, data[[n]], env)
 #' @export 
 list2vars <- function(data, env = parent.frame()) {
@@ -215,6 +256,10 @@ list2vars <- function(data, env = parent.frame()) {
 		env[[n]] = data[[n]]
 }
 
+# usage
+# debug.save()
+# stop()
+# debug.load()
 #' @export 
 debug.save = function() {		
 	gall <<- parent.frame()
@@ -314,15 +359,16 @@ iif <- function
       falsepart[cond] = truepart 
     else {
       cond = ifna(cond,F)
-      if(is.xts(truepart))
-        falsepart[cond] = coredata(truepart)[cond]
+	  
+      if(requireNamespace('xts', quietly = T) && xts::is.xts(truepart))
+			falsepart[cond] = coredata(truepart)[cond]
       else
         falsepart[cond] = truepart[cond]
     }
       
     #falsepart[!is.na(cond)] = temp
 
-    return(falsepart);
+    falsepart
   }
 } 
 
@@ -718,6 +764,54 @@ repmat <- function
 }
 
 ###############################################################################
+#' Convience shortcut for as.vector function
+#'
+#' @param x object
+#'
+#' @return new vector
+#' 
+#' @export 
+###############################################################################
+vec <- function
+(
+	x
+)
+{
+	if( !is.null(dim(x)) && len(dim(x)) != 1) 
+		dim(x) = len(x)
+	x
+}
+
+###############################################################################
+#' Convience shortcut for matrix function
+#'
+#' @param x object
+#' @param col flag to inidcate 1 column if x is a vector; otherwise 1 row
+#'
+#' @return new matrix
+#' 
+#' @export 
+###############################################################################
+mat <- function
+(
+	x,
+	col = T	
+)
+{
+	if( is.null(dim(x)) || len(dim(x)) != 2) {
+		n = names(x)
+		if( col ) {
+			dim(x) = c(len(x), 1)
+			if( !is.null(n) ) rownames(x) = n
+		} else {
+			dim(x) = c(1, len(x))
+			if( !is.null(n) ) colnames(x) = n
+		}
+	}	
+	x
+}
+
+###############################################################################
 #' Repeat Rows
 #'
 #' @param m vector (row)
@@ -971,7 +1065,10 @@ make.xts <- function
     x = structure(.Data = x, 
       index = structure(index, tzone = tzone, tclass = orderBy), 
       class = c('xts', 'zoo'), .indexCLASS = orderBy, tclass=orderBy, .indexTZ = tzone, tzone=tzone)
-  return( x )
+      
+    if (!is.null(attributes(x)$dimnames[[1]]))
+        dimnames(x) <- dimnames(x)              
+    x
 }
 
 
@@ -1096,12 +1193,24 @@ load.packages('data.table')
 if (is.matrix(x) || (is.data.frame(x) && !is.data.table(x)) ) {
   data = x
   dates = as.matrix(data[,date.column,drop=F])
-  data  = data[,-date.column,drop=F]
+  
+  index = which(sapply(data,class) != 'character')
+    index = index[ index > date.column ]  
+  data  = data[,index,drop=F]
+  #data  = data[,-date.column,drop=F]
 } else {
   filename = x  
 if(!is.data.table(x)) {
   # set autostart
-  out = fread(filename, stringsAsFactors=F, sep=sep, autostart=2, skip=skip)
+  out = tryCatch({ 
+	fread(filename, stringsAsFactors=F, sep=sep, autostart=2, skip=skip)
+  }, error = function(ex) data.table(read.csv(filename,stringsAsFactors=F,sep=sep,skip=skip))
+  )
+# alternative  
+#temp = readLines(filename)
+#a=tstrsplit(temp[-c(1:2)], ',', type.convert=T)
+#names(a) = spl(temp[2],',')
+#setDT(a)
     setnames(out,gsub(' ', '_', trim(colnames(out)))) 
 } else out = x  
 
@@ -2002,4 +2111,112 @@ rev.map = function(map) {
 	value = names(map)
 		names(value) = map
 	value
+}
+
+
+###############################################################################
+#' Reverse mapping
+#'
+#' @rdname FileFunctions
+#' @export 
+###############################################################################
+write.file = function(..., file) cat(..., file=file)
+
+
+# [Import text file as single character string](http://stackoverflow.com/questions/9068397/import-text-file-as-single-character-string)
+#' @rdname FileFunctions
+#' @export 
+read.file = function(file) readChar(file, file.info(file)$size)
+
+
+###############################################################################
+#' String Buffer class - fast storage for strigns
+#' 
+#' @examples
+#' \dontrun{ 
+#' sb = string.buffer()
+#' add(sb, 'asbcd')
+#' add(sb, '234543')
+#' string(sb)
+#' close(sb)
+#' sb=NULL
+#' }
+#' @rdname string.buffer
+#' @export
+###############################################################################
+string.buffer = function() structure(list(file = rawConnection(raw(0L), open='w')), class = 'StringBuffer')
+
+#' @rdname string.buffer
+#' @export
+add = function(x,...,sep,end.sep) UseMethod('add',x)
+
+#' @rdname string.buffer
+#' @export
+add.StringBuffer = function(x,...,sep=',',end.sep='\n') {
+	cat(..., file = x$file, sep = sep)	
+	if(nchar(end.sep) > 0) cat(end.sep, file = x$file)
+	}
+
+#' @rdname string.buffer
+#' @export
+string = function(x) UseMethod('string',x)
+
+#' @rdname string.buffer
+#' @export
+string.StringBuffer = function(x) rawToChar(rawConnectionValue(x$file))
+
+#' @rdname string.buffer
+#' @export
+close = function(x) UseMethod('close',x)
+
+#' @rdname string.buffer
+#' @export
+close.StringBuffer = function(x) {close(x$file); x$file = NULL}
+
+
+# test string.buffer functionality
+string.buffer.test = function() {
+	# base example
+	file = rawConnection(raw(0L), open="w")
+
+	write('asbcd', file)
+	write('234543', file)
+
+	res =rawToChar(rawConnectionValue(file))
+
+	close(file)
+	file = NULL;
+	
+	# string.buffer class usage
+	sb = string.buffer()
+	add(sb, 'asbcd')
+	add(sb, '234543')
+	string(sb)
+	close(sb)
+	sb=NULL
+		
+	#benchmark
+   	test.base = function() {
+   		s =''
+		for(i in 1:10000)
+			s = paste(s,'abcdef',sep='')
+		nchar(s)
+   	}
+   	test.string.buffer = function() {
+		sb = string.buffer()
+		for(i in 1:10000)
+			add(sb, 'abcdef', '')
+		s = string(sb)	
+		sb=NULL
+		nchar(s)
+   	}
+	
+  	library(rbenchmark)
+	benchmark(
+   		test.base(),
+   		test.string.buffer(),
+       columns = c("test", "replications", "elapsed", "relative"),
+       order = "relative",
+       replications = 1
+	)
 }
